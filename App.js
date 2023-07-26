@@ -1,20 +1,37 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer } from "@react-navigation/native";
+import { StatusBar } from "expo-status-bar";
+import { COLORS } from "./constants/Colors";
+import { Dimensions, StyleSheet } from "react-native";
+import { Provider } from "react-redux";
+import { reduxStore } from "./redux/store";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import EditExpenseScreen from "./screens/EditExpenseScreen";
+import ExpensesScreen from "./screens/ExpensesScreen";
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+    return (
+        <Provider store={reduxStore}>
+            <StatusBar style="light" />
+            <NavigationContainer>
+                <Stack.Navigator
+                    screenOptions={{
+                        headerTitleAlign: "center",
+                        headerStyle: styles.header,
+                        headerTintColor: "white",
+                        animation: "slide_from_right",
+                    }}>
+                    <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Edit Expense" component={EditExpenseScreen} />
+                </Stack.Navigator>
+            </NavigationContainer>
+        </Provider>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    header: {
+        backgroundColor: COLORS.dark600,
+    },
 });
