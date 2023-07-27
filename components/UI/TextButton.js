@@ -12,18 +12,21 @@ const TextButton = ({
     textAlign = "center",
     marginVertical = 0,
     onPress = () => {},
+    disabled = false,
 }) => {
     return (
         <View
             style={[
                 styles.container,
                 { backgroundColor, borderColor, borderWidth: borderColor ? 1 : 0, width, marginVertical },
+                disabled ? styles.disabled : null,
             ]}>
             <Pressable
+                disabled={disabled}
                 onPress={onPress}
                 style={[styles.pressable, { paddingHorizontal, paddingVertical, alignItems: textAlign }]}
                 android_ripple={{ color: rippleColor }}>
-                <Text style={styles.text}>{title}</Text>
+                <Text style={[styles.text, disabled ? styles.disabledText : null]}>{title}</Text>
             </Pressable>
         </View>
     );
@@ -45,8 +48,17 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
 
+    disabled: {
+        backgroundColor: COLORS.disabled,
+        borderColor: COLORS.disabled,
+    },
+
     text: {
         color: "white",
+    },
+
+    disabledText: {
+        color: COLORS.onDisabled,
     },
 });
 

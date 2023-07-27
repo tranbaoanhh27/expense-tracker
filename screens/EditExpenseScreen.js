@@ -8,6 +8,8 @@ import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/d
 import TextButton from "../components/UI/TextButton";
 import moment from "moment";
 import { useNavigation } from "@react-navigation/native";
+import Input from "../components/UI/Input";
+import { current } from "@reduxjs/toolkit";
 
 const EditExpenseScreen = ({ route }) => {
     const navigation = useNavigation();
@@ -18,14 +20,51 @@ const EditExpenseScreen = ({ route }) => {
     const [expenseState, setExpenseState] = useState({
         id: expense ? expense.id : "",
         name: expense ? expense.name : "",
+        nameError: expense ? null : "Name is required!",
         amount: expense ? String(expense.amount) : "",
+        amountError: expense ? null : "Amount is required!",
         date: new Date(expense ? expense.date : null),
+        dateError: expense ? null : "Date is required!",
+        confirmable: expense ? true : false,
     });
+
     const dispatch = useDispatch();
+
+    const validateInput = () => {
+        return !expenseState.nameError && !expenseState.amountError && !expenseState.dateError;
+    };
+
+    const onNameChangeText = (text) => {
+        const validateTrue = text && text.trim().length > 0;
+
+        setExpenseState((curState) => ({
+            ...curState,
+            name: text,
+            nameError: validateTrue ? null : "Name is required!",
+        }));
+    };
+
+    const onAmountChangeText = (text) => {
+        const notEmpty = text && text.trim().length > 0;
+        const isNumber = !isNaN(text);
+
+        let errorMessage = null;
+        if (!notEmpty) errorMessage = "Amount is required!";
+        else if (!isNumber) errorMessage = "Invalid number!";
+
+        setExpenseState((curState) => ({
+            ...curState,
+            amount: text,
+            amountError: errorMessage,
+        }));
+    };
 
     const onChangeDateTime = (event, selectedDate) => {
         const currentDate = selectedDate;
-        setExpenseState((prev) => ({ ...prev, date: currentDate }));
+        setExpenseState((prev) => ({
+            ...prev,
+            date: currentDate,
+        }));
     };
 
     const showDateTimePicker = (currentMode) => {
@@ -90,33 +129,60 @@ const EditExpenseScreen = ({ route }) => {
     return (
         <View style={styles.screen}>
             <View style={styles.form}>
-                <TextInput
-                    value={expenseState.name}
-                    onChangeText={(text) => setExpenseState((prev) => ({ ...prev, name: text }))}
-                    style={styles.input}
-                    placeholder="Name"
-                    placeholderTextColor="white"
-                />
-                <TextInput
-                    value={expenseState.amount}
-                    onChangeText={(text) => setExpenseState((prev) => ({ ...prev, amount: text }))}
-                    style={styles.input}
-                    placeholder="Amount"
-                    inputMode="numeric"
-                    placeholderTextColor="white"
-                />
-                <TextButton
-                    title={moment(expenseState.date).format("MMMM Do YYYY")}
-                    backgroundColor={COLORS.dark400}
-                    borderColor={null}
-                    width="100%"
-                    paddingVertical={12}
-                    marginVertical={8}
-                    textAlign="flex-start"
-                    onPress={showDatepicker}
-                />
+                <Input
+                    label="Name"
+                    containerStyle={styles.inputContainer}
+                    minLabelWidth="25%"
+                    error={expenseState.nameError}
+                    helperText={expenseState.nameError}
+                    labelStyle={styles.inputLabel}>
+                    <TextInput
+                        value={expenseState.name}
+                        onChangeText={onNameChangeText}
+                        style={styles.input}
+                        placeholder="Name"
+                        placeholderTextColor="#ffffff33"
+                    />
+                </Input>
+                <Input
+                    label="Amount ($)"
+                    containerStyle={styles.inputContainer}
+                    minLabelWidth="25%"
+                    error={expenseState.amountError}
+                    helperText={expenseState.amountError}
+                    labelStyle={styles.inputLabel}>
+                    <TextInput
+                        value={expenseState.amount}
+                        onChangeText={onAmountChangeText}
+                        style={styles.input}
+                        placeholder="Amount"
+                        inputMode="numeric"
+                        placeholderTextColor="#ffffff33"
+                    />
+                </Input>
+                <Input
+                    label="Date"
+                    containerStyle={styles.inputContainer}
+                    minLabelWidth="25%"
+                    labelStyle={styles.inputLabel}>
+                    <TextButton
+                        title={moment(expenseState.date).format("MMMM Do YYYY")}
+                        backgroundColor={COLORS.dark400}
+                        borderColor={null}
+                        width="100%"
+                        paddingVertical={12}
+                        textAlign="flex-start"
+                        onPress={showDatepicker}
+                    />
+                </Input>
                 <View style={styles.buttons}>
-                    <TextButton title="Save" paddingHorizontal={36} width={"100%"} onPress={confirm} />
+                    <TextButton
+                        title="Save"
+                        paddingHorizontal={36}
+                        width={"100%"}
+                        disabled={!validateInput()}
+                        onPress={confirm}
+                    />
                 </View>
             </View>
         </View>
@@ -137,11 +203,18 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
 
+    inputContainer: {
+        marginVertical: 8,
+    },
+
+    inputLabel: {
+        color: "white",
+    },
+
     input: {
         backgroundColor: COLORS.dark400,
         color: "white",
         width: "100%",
-        marginVertical: 8,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 8,

@@ -7,13 +7,51 @@ import { useState } from "react";
 import { ExpensesActions } from "../redux/slices/expenses";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import moment from "moment";
+import Input from "./UI/Input";
 
 const AddExpenseModal = ({ visible = false, onClose = () => {} }) => {
     const [name, setName] = useState("");
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(new Date());
 
+    const [nameError, setNameError] = useState(null);
+    const [amountError, setAmountError] = useState(null);
+
     const dispatch = useDispatch();
+
+    const validateInput = () => {
+        const validName = validateName(name);
+        const validAmount = validateAmount(amount);
+        return validName && validAmount;
+    };
+
+    const validateName = (text) => {
+        const validateTrue = text && text.trim().length > 0;
+        setNameError(validateTrue ? null : "Name is required!");
+        return validateTrue;
+    };
+
+    const onNameChangeText = (text) => {
+        setName(text);
+        validateName(text);
+    };
+
+    const validateAmount = (text) => {
+        const notEmpty = text && text.trim().length > 0;
+        const isNumber = !isNaN(text);
+
+        let errorMessage = null;
+        if (!notEmpty) errorMessage = "Amount is required!";
+        else if (!isNumber) errorMessage = "Invalid number!";
+
+        setAmountError(errorMessage);
+        return notEmpty && isNumber;
+    };
+
+    const onAmountChangeText = (text) => {
+        setAmount(text);
+        validateAmount(text);
+    };
 
     const onChangeDateTime = (event, selectedDate) => {
         const currentDate = selectedDate;
@@ -41,10 +79,13 @@ const AddExpenseModal = ({ visible = false, onClose = () => {} }) => {
     const resetInput = () => {
         setName("");
         setAmount("");
+        setNameError(null);
+        setAmountError(null);
         setDate(new Date());
     };
 
     const confirm = () => {
+        if (!validateInput()) return;
         const expense = {
             id: `${name}${new Date().toUTCString()}${Math.random()}`,
             name: name,
@@ -72,31 +113,53 @@ const AddExpenseModal = ({ visible = false, onClose = () => {} }) => {
                         <Text style={styles.headerText}>Add New Expense</Text>
                     </View>
                     <View style={styles.form}>
-                        <TextInput
-                            value={name}
-                            onChangeText={(text) => setName(text)}
-                            style={styles.input}
-                            placeholder="Name"
-                            placeholderTextColor="white"
-                        />
-                        <TextInput
-                            value={amount}
-                            onChangeText={(text) => setAmount(text)}
-                            style={styles.input}
-                            placeholder="Amount"
-                            inputMode="numeric"
-                            placeholderTextColor="white"
-                        />
-                        <TextButton
-                            title={moment(date).format("MMMM Do YYYY")}
-                            backgroundColor={COLORS.dark400}
-                            borderColor={null}
-                            width="100%"
-                            paddingVertical={12}
-                            marginVertical={8}
-                            textAlign="flex-start"
-                            onPress={showDatepicker}
-                        />
+                        <Input
+                            label="Name"
+                            containerStyle={styles.inputContainer}
+                            minLabelWidth="25%"
+                            error={nameError}
+                            helperText={nameError}
+                            labelStyle={styles.inputLabel}>
+                            <TextInput
+                                value={name}
+                                onChangeText={onNameChangeText}
+                                style={styles.input}
+                                placeholder="Name"
+                                placeholderTextColor="#ffffff33"
+                            />
+                        </Input>
+                        <Input
+                            label="Amount ($)"
+                            containerStyle={styles.inputContainer}
+                            minLabelWidth="25%"
+                            error={amountError}
+                            helperText={amountError}
+                            labelStyle={styles.inputLabel}>
+                            <TextInput
+                                value={amount}
+                                onChangeText={onAmountChangeText}
+                                style={styles.input}
+                                placeholder="Amount"
+                                inputMode="numeric"
+                                placeholderTextColor="#ffffff33"
+                            />
+                        </Input>
+                        <Input
+                            label="Amount"
+                            containerStyle={styles.inputContainer}
+                            minLabelWidth="25%"
+                            labelStyle={styles.inputLabel}>
+                            <TextButton
+                                title={moment(date).format("MMMM Do YYYY")}
+                                backgroundColor={COLORS.dark400}
+                                borderColor={null}
+                                width="100%"
+                                paddingVertical={12}
+                                marginVertical={8}
+                                textAlign="flex-start"
+                                onPress={showDatepicker}
+                            />
+                        </Input>
                         <View style={styles.buttons}>
                             <TextButton
                                 title="Reset"
@@ -154,11 +217,18 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
 
+    inputContainer: {
+        marginVertical: 8,
+    },
+
+    inputLabel: {
+        color: "white",
+    },
+
     input: {
         backgroundColor: COLORS.dark400,
         color: "white",
         width: "100%",
-        marginVertical: 8,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 8,
