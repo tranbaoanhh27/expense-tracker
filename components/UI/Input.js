@@ -13,7 +13,7 @@ const Input = ({
     return (
         <View style={[styles.container, { ...containerStyle }]}>
             <View style={[styles.labelContainer, { minWidth: minLabelWidth }]}>
-                <Text style={labelStyle}>{label}</Text>
+                <Text style={[labelStyle, error ? styles.errorLabel : null]}>{label}</Text>
             </View>
             <View style={styles.inputContainer}>
                 <View style={[styles.input, error ? styles.errorInputContainer : null]}>{children}</View>
@@ -33,6 +33,11 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         marginRight: 16,
         paddingTop: 12,
+    },
+
+    errorLabel: {
+        color: COLORS.danger,
+        fontWeight: "bold",
     },
 
     inputContainer: {
