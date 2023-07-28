@@ -1,4 +1,4 @@
-import { Dimensions, Modal, StyleSheet, Text, TextInput, View } from "react-native";
+import { Dimensions, Modal, StyleSheet, Text, TextInput, ToastAndroid, View } from "react-native";
 import { useDispatch } from "react-redux";
 import { COLORS } from "../constants/Colors";
 import IoniconButton from "./UI/IoniconButton";
@@ -8,6 +8,9 @@ import { ExpensesActions } from "../redux/slices/expenses";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import moment from "moment";
 import Input from "./UI/Input";
+import API from "../utils/API";
+import Loading from "./UI/Loading";
+import Error from "./UI/Error";
 
 const AddExpenseModal = ({ visible = false, onClose = () => {} }) => {
     const [name, setName] = useState("");
@@ -16,6 +19,9 @@ const AddExpenseModal = ({ visible = false, onClose = () => {} }) => {
 
     const [nameError, setNameError] = useState(null);
     const [amountError, setAmountError] = useState(null);
+
+    const [postingExpense, setPostingExpense] = useState(false);
+    const [error, setError] = useState(null);
 
     const dispatch = useDispatch();
 
@@ -55,7 +61,6 @@ const AddExpenseModal = ({ visible = false, onClose = () => {} }) => {
 
     const onChangeDateTime = (event, selectedDate) => {
         const currentDate = selectedDate;
-        console.log(selectedDate);
         setDate(currentDate);
     };
 
@@ -72,10 +77,6 @@ const AddExpenseModal = ({ visible = false, onClose = () => {} }) => {
         showDateTimePicker("date");
     };
 
-    const showTimepicker = () => {
-        showDateTimePicker("time");
-    };
-
     const resetInput = () => {
         setName("");
         setAmount("");
@@ -84,15 +85,22 @@ const AddExpenseModal = ({ visible = false, onClose = () => {} }) => {
         setDate(new Date());
     };
 
-    const confirm = () => {
+    const confirm = async () => {
         if (!validateInput()) return;
         const expense = {
-            id: `${name}${new Date().toUTCString()}${Math.random()}`,
             name: name,
             amount: +amount,
             date: date.toISOString(),
         };
-        dispatch(ExpensesActions.addExpense({ expense }));
+        setPostingExpense(true);
+        const id = await API.postExpense(expense);
+        setPostingExpense(false);
+        if (!id) {
+            setError("We're having trouble saving new expense data to server!");
+            return;
+        }
+        setError(null);
+        dispatch(ExpensesActions.addExpense({ expense: { ...expense, id: id } }));
         resetInput();
         onClose();
     };
@@ -112,65 +120,71 @@ const AddExpenseModal = ({ visible = false, onClose = () => {} }) => {
                         />
                         <Text style={styles.headerText}>Add New Expense</Text>
                     </View>
-                    <View style={styles.form}>
-                        <Input
-                            label="Name"
-                            containerStyle={styles.inputContainer}
-                            minLabelWidth="25%"
-                            error={nameError}
-                            helperText={nameError}
-                            labelStyle={styles.inputLabel}>
-                            <TextInput
-                                value={name}
-                                onChangeText={onNameChangeText}
-                                style={styles.input}
-                                placeholder="Name"
-                                placeholderTextColor="#ffffff33"
-                            />
-                        </Input>
-                        <Input
-                            label="Amount ($)"
-                            containerStyle={styles.inputContainer}
-                            minLabelWidth="25%"
-                            error={amountError}
-                            helperText={amountError}
-                            labelStyle={styles.inputLabel}>
-                            <TextInput
-                                value={amount}
-                                onChangeText={onAmountChangeText}
-                                style={styles.input}
-                                placeholder="Amount"
-                                inputMode="numeric"
-                                placeholderTextColor="#ffffff33"
-                            />
-                        </Input>
-                        <Input
-                            label="Amount"
-                            containerStyle={styles.inputContainer}
-                            minLabelWidth="25%"
-                            labelStyle={styles.inputLabel}>
-                            <TextButton
-                                title={moment(date).format("MMMM Do YYYY")}
-                                backgroundColor={COLORS.dark400}
-                                borderColor={null}
-                                width="100%"
-                                paddingVertical={12}
-                                marginVertical={8}
-                                textAlign="flex-start"
-                                onPress={showDatepicker}
-                            />
-                        </Input>
-                        <View style={styles.buttons}>
-                            <TextButton
-                                title="Reset"
-                                backgroundColor={COLORS.dark600}
-                                borderColor={null}
-                                paddingHorizontal={36}
-                                onPress={resetInput}
-                            />
-                            <TextButton onPress={confirm} title="Confirm" paddingHorizontal={36} />
+                    {postingExpense && !error && <Loading text="SAVING" />}
+                    {!postingExpense && error && (
+                        <Error message={error} actionButtonTitle="Close" action={() => setError(null)} />
+                    )}
+                    {!postingExpense && !error && (
+                        <View style={styles.form}>
+                            <Input
+                                label="Name"
+                                containerStyle={styles.inputContainer}
+                                minLabelWidth="25%"
+                                error={nameError}
+                                helperText={nameError}
+                                labelStyle={styles.inputLabel}>
+                                <TextInput
+                                    value={name}
+                                    onChangeText={onNameChangeText}
+                                    style={styles.input}
+                                    placeholder="Name"
+                                    placeholderTextColor="#ffffff33"
+                                />
+                            </Input>
+                            <Input
+                                label="Amount ($)"
+                                containerStyle={styles.inputContainer}
+                                minLabelWidth="25%"
+                                error={amountError}
+                                helperText={amountError}
+                                labelStyle={styles.inputLabel}>
+                                <TextInput
+                                    value={amount}
+                                    onChangeText={onAmountChangeText}
+                                    style={styles.input}
+                                    placeholder="Amount"
+                                    inputMode="numeric"
+                                    placeholderTextColor="#ffffff33"
+                                />
+                            </Input>
+                            <Input
+                                label="Date"
+                                containerStyle={styles.inputContainer}
+                                minLabelWidth="25%"
+                                labelStyle={styles.inputLabel}>
+                                <TextButton
+                                    title={moment(date).format("MMMM Do YYYY")}
+                                    backgroundColor={COLORS.dark400}
+                                    borderColor={null}
+                                    width="100%"
+                                    paddingVertical={12}
+                                    marginVertical={8}
+                                    textAlign="flex-start"
+                                    onPress={showDatepicker}
+                                />
+                            </Input>
+                            <View style={styles.buttons}>
+                                <TextButton
+                                    title="Reset"
+                                    backgroundColor={COLORS.dark600}
+                                    borderColor={null}
+                                    paddingHorizontal={36}
+                                    onPress={resetInput}
+                                />
+                                <TextButton onPress={confirm} title="Confirm" paddingHorizontal={36} />
+                            </View>
                         </View>
-                    </View>
+                    )}
                 </View>
             </View>
         </Modal>

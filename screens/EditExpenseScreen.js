@@ -9,7 +9,9 @@ import TextButton from "../components/UI/TextButton";
 import moment from "moment";
 import { useNavigation } from "@react-navigation/native";
 import Input from "../components/UI/Input";
-import { current } from "@reduxjs/toolkit";
+import API from "../utils/API";
+import Loading from "../components/UI/Loading";
+import Error from "../components/UI/Error";
 
 const EditExpenseScreen = ({ route }) => {
     const navigation = useNavigation();
@@ -27,6 +29,9 @@ const EditExpenseScreen = ({ route }) => {
         dateError: expense ? null : "Date is required!",
         confirmable: expense ? true : false,
     });
+
+    const [updating, setUpdating] = useState(null);
+    const [error, setError] = useState(null);
 
     const dispatch = useDispatch();
 
@@ -80,15 +85,22 @@ const EditExpenseScreen = ({ route }) => {
         showDateTimePicker("date");
     };
 
-    const confirm = () => {
+    const confirm = async () => {
         const expense = {
-            id: expenseId,
             name: expenseState.name,
             amount: +expenseState.amount,
             date: expenseState.date.toISOString(),
         };
+        setUpdating("Saving...");
+        const response = await API.updateExpense(expenseId, expense);
+        setUpdating(null);
+        if (!response) {
+            setError("An error occurred while updating this expense on the server.");
+            return;
+        }
+        setError(null);
         dispatch(ExpensesActions.updateExpense({ id: expenseId, data: expense }));
-        ToastAndroid.show("Updated", ToastAndroid.LONG);
+        ToastAndroid.show("Saved", ToastAndroid.LONG);
         navigation.goBack();
     };
 
@@ -106,7 +118,15 @@ const EditExpenseScreen = ({ route }) => {
         ]);
     };
 
-    const remove = () => {
+    const remove = async () => {
+        setUpdating("Deleting...");
+        const response = await API.deleteExpense(expenseId);
+        setUpdating(null);
+        if (!response) {
+            setError("An error occurred while deleting this expense");
+            return;
+        }
+        setError(null);
         dispatch(ExpensesActions.removeExpense({ expenseId }));
         ToastAndroid.show("Removed", ToastAndroid.LONG);
         navigation.goBack();
@@ -128,63 +148,67 @@ const EditExpenseScreen = ({ route }) => {
 
     return (
         <View style={styles.screen}>
-            <View style={styles.form}>
-                <Input
-                    label="Name"
-                    containerStyle={styles.inputContainer}
-                    minLabelWidth="25%"
-                    error={expenseState.nameError}
-                    helperText={expenseState.nameError}
-                    labelStyle={styles.inputLabel}>
-                    <TextInput
-                        value={expenseState.name}
-                        onChangeText={onNameChangeText}
-                        style={styles.input}
-                        placeholder="Name"
-                        placeholderTextColor="#ffffff33"
-                    />
-                </Input>
-                <Input
-                    label="Amount ($)"
-                    containerStyle={styles.inputContainer}
-                    minLabelWidth="25%"
-                    error={expenseState.amountError}
-                    helperText={expenseState.amountError}
-                    labelStyle={styles.inputLabel}>
-                    <TextInput
-                        value={expenseState.amount}
-                        onChangeText={onAmountChangeText}
-                        style={styles.input}
-                        placeholder="Amount"
-                        inputMode="numeric"
-                        placeholderTextColor="#ffffff33"
-                    />
-                </Input>
-                <Input
-                    label="Date"
-                    containerStyle={styles.inputContainer}
-                    minLabelWidth="25%"
-                    labelStyle={styles.inputLabel}>
-                    <TextButton
-                        title={moment(expenseState.date).format("MMMM Do YYYY")}
-                        backgroundColor={COLORS.dark400}
-                        borderColor={null}
-                        width="100%"
-                        paddingVertical={12}
-                        textAlign="flex-start"
-                        onPress={showDatepicker}
-                    />
-                </Input>
-                <View style={styles.buttons}>
-                    <TextButton
-                        title="Save"
-                        paddingHorizontal={36}
-                        width={"100%"}
-                        disabled={!validateInput()}
-                        onPress={confirm}
-                    />
+            {updating && !error && <Loading text={updating} />}
+            {!updating && error && <Error message={error} action={() => setError(null)} actionButtonTitle="Close" />}
+            {!updating && !error && (
+                <View style={styles.form}>
+                    <Input
+                        label="Name"
+                        containerStyle={styles.inputContainer}
+                        minLabelWidth="25%"
+                        error={expenseState.nameError}
+                        helperText={expenseState.nameError}
+                        labelStyle={styles.inputLabel}>
+                        <TextInput
+                            value={expenseState.name}
+                            onChangeText={onNameChangeText}
+                            style={styles.input}
+                            placeholder="Name"
+                            placeholderTextColor="#ffffff33"
+                        />
+                    </Input>
+                    <Input
+                        label="Amount ($)"
+                        containerStyle={styles.inputContainer}
+                        minLabelWidth="25%"
+                        error={expenseState.amountError}
+                        helperText={expenseState.amountError}
+                        labelStyle={styles.inputLabel}>
+                        <TextInput
+                            value={expenseState.amount}
+                            onChangeText={onAmountChangeText}
+                            style={styles.input}
+                            placeholder="Amount"
+                            inputMode="numeric"
+                            placeholderTextColor="#ffffff33"
+                        />
+                    </Input>
+                    <Input
+                        label="Date"
+                        containerStyle={styles.inputContainer}
+                        minLabelWidth="25%"
+                        labelStyle={styles.inputLabel}>
+                        <TextButton
+                            title={moment(expenseState.date).format("MMMM Do YYYY")}
+                            backgroundColor={COLORS.dark400}
+                            borderColor={null}
+                            width="100%"
+                            paddingVertical={12}
+                            textAlign="flex-start"
+                            onPress={showDatepicker}
+                        />
+                    </Input>
+                    <View style={styles.buttons}>
+                        <TextButton
+                            title="Save"
+                            paddingHorizontal={36}
+                            width={"100%"}
+                            disabled={!validateInput()}
+                            onPress={confirm}
+                        />
+                    </View>
                 </View>
-            </View>
+            )}
         </View>
     );
 };

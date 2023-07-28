@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dimensions, StyleSheet } from "react-native";
 import AddExpenseModal from "../components/AddExpenseModal";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -7,11 +7,48 @@ import { Entypo, Ionicons } from "@expo/vector-icons";
 import AllExpensesScreen from "./AllExpensesScreen";
 import RecentExpensesScreen from "./RecentExpensesScreen";
 import { COLORS } from "../constants/Colors";
+import { useDispatch } from "react-redux";
+import API from "../utils/API";
+import { ExpensesActions } from "../redux/slices/expenses";
+import Loading from "../components/UI/Loading";
+import Error from "../components/UI/Error";
 
 const Tab = createBottomTabNavigator();
 
 const ExpensesScreen = () => {
     const [addingExpense, setAddingExpense] = useState(false);
+    const [loadingExpenses, setLoadingExpenses] = useState(false);
+    const [error, setError] = useState(null);
+
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        (async () => {
+            setLoadingExpenses(true);
+            const response = await API.getExpenses();
+            setLoadingExpenses(false);
+            if (!response) {
+                setError("We currently cannot load expenses data from the server.");
+                return;
+            }
+            setError(false);
+            const initialExpenses = [];
+            for (const key in response) initialExpenses.push({ ...response[key], id: key });
+            dispatch(ExpensesActions.setExpenses({ expenses: initialExpenses }));
+        })();
+    }, []);
+
+    if (error)
+        return (
+            <Error
+                message={error}
+                actionButtonTitle="Close"
+                action={() => setError(null)}
+                backgroundColor={COLORS.dark500}
+            />
+        );
+    if (loadingExpenses) return <Loading backgroundColor={COLORS.dark500} text="LOADING EXPENSES" />;
+
     return (
         <>
             <AddExpenseModal visible={addingExpense} onClose={() => setAddingExpense(false)} />

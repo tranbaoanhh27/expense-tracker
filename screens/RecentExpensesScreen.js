@@ -12,7 +12,7 @@ const RecentExpensesScreen = () => {
         currentDate.setHours(23, 59, 59, 999);
         const expenseDate = new Date(expense.date);
         const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-        return currentDate - expenseDate <= SEVEN_DAYS;
+        return expenseDate - currentDate <= 0 && Math.abs(currentDate - expenseDate) <= SEVEN_DAYS;
     });
 
     if (recentExpenses.length <= 0) {

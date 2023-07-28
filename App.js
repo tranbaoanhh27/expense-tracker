@@ -2,7 +2,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { COLORS } from "./constants/Colors";
 import { Dimensions, StyleSheet } from "react-native";
-import { Provider } from "react-redux";
+import { Provider, useDispatch } from "react-redux";
 import { reduxStore } from "./redux/store";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import EditExpenseScreen from "./screens/EditExpenseScreen";

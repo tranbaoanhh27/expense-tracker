@@ -8,8 +8,24 @@ export const ExpensesSlice = createSlice({
     reducers: {
         addExpense(state, action) {
             const expense = action.payload.expense;
-            if (!expense) return;
+            if (!expense) {
+                console.error("expense is null");
+                return;
+            }
             state.expenses.push(expense);
+            state.expenses = state.expenses.sort((a, b) => {
+                const dateA = new Date(a.date);
+                const dateB = new Date(b.date);
+                return dateB - dateA;
+            });
+        },
+        setExpenses(state, action) {
+            const expenses = action.payload.expenses;
+            if (!expenses) {
+                console.error("expenses is null");
+                return;
+            }
+            state.expenses = expenses;
             state.expenses = state.expenses.sort((a, b) => {
                 const dateA = new Date(a.date);
                 const dateB = new Date(b.date);
